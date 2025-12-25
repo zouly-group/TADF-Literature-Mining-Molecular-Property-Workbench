@@ -1,0 +1,62 @@
+# TADF数据抽取系统 - 依赖包
+
+# ==================== 核心依赖 ====================
+requests>=2.28.0
+pathlib>=1.0.1
+
+# ==================== Streamlit Web应用 ====================
+streamlit>=1.28.0
+pillow>=9.0.0
+pandas>=1.5.0
+
+# ==================== 图像处理 ====================
+opencv-python>=4.8.0  # 图像分割功能
+numpy>=1.23.0  # OpenCV依赖
+
+# ==================== 数据处理 ====================
+pandas>=1.5.0
+
+# ==================== DECIMER服务端依赖 ====================
+# 运行server.py需要以下包
+flask>=2.3.0
+werkzeug>=2.3.0
+flask-cors>=4.0.0
+
+# DECIMER本体（可选，推荐安装）
+# decimer>=2.0.0  # 取消注释以安装DECIMER Python包
+
+# ==================== 化学信息学（可选） ====================
+# 用于SMILES验证和化学计算
+# rdkit>=2022.09.1  # 取消注释以安装RDKit
+
+# ==================== 数据库 ====================
+# 使用Python内置的sqlite3，无需额外安装
+
+# ==================== 日志和工具 ====================
+python-dateutil>=2.8.0
+
+# ==================== 生产环境推荐（可选） ====================
+# gunicorn>=21.0.0  # WSGI服务器，用于生产环境
+# redis>=4.5.0  # 缓存（可选）
+# pillow>=9.0.0  # 图像处理
+# matplotlib>=3.5.0  # 可视化
+# scikit-learn>=1.1.0  # 机器学习
+
+# ==================== 说明 ====================
+# 1. MinerU API通过HTTP调用，无需安装本地包
+# 2. Qwen通过DashScope API调用，无需安装本地模型
+# 3. DECIMER可以作为Python包或CLI工具运行
+# 4. 生产环境建议使用gunicorn运行DECIMER服务
+
+# ==================== 安装说明 ====================
+# 基础安装：
+#   pip install -r requirements.txt
+#
+# 完整安装（包含DECIMER）：
+#   pip install decimer
+#   pip install -r requirements.txt
+#
+# 生产环境安装：
+#   pip install -r requirements.txt
+#   pip install gunicorn decimer
+

@@ -1,0 +1,126 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Data
+data/raw_pdfs/*.pdf
+data/mineru_output/
+data/processed/
+data/database/*.db
+data/database/*.db-journal
+
+# Logs
+logs/*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Config with secrets
+config_local.py
+config.py
+
+# Large binary files
+*.zip
+*.tar.gz
+*.7z
+*.rar
+
+# Test images and outputs
+image*.png
+test_*.png
+test_split_output/
+test_*.log
+
+# Temporary files
+*.tmp
+*.temp
+*~
+*.bak
+*.backup
+*.swp
+*.swo
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+.project
+.classpath
+.settings/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Application specific
+# Web app cache and temp files
+static/temp/
+templates/temp/
+
+# Database files (already partially covered)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Log files (expand existing)
+logs/
+*.log
+log.txt
+
+# Data processing outputs
+data/output/
+data/temp/
+data/cache/
+
+# Temporary/Development documentation files
+*SUMMARY.md
+FILE_LIST.md
+

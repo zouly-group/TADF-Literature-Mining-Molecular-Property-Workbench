@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TADF数据抽取系统</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container">
+            <h1 class="logo">🔬 TADF数据抽取系统</h1>
+            <div class="nav-links">
+                <button class="btn btn-link" onclick="showPage('upload')">上传PDF</button>
+                <button class="btn btn-link" onclick="showPage('papers')">论文列表</button>
+                <button class="btn btn-link" onclick="showPage('database')">数据库查看</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主容器 -->
+    <div class="container main-container">
+        <!-- 上传页面 -->
+        <div id="upload-page" class="page active">
+            <div class="card">
+                <h2>上传PDF文件</h2>
+                <form id="upload-form" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="paper-id">论文ID</label>
+                        <input type="text" id="paper-id" name="paper_id" placeholder="输入论文ID" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="extraction-config">抽取配置（可选）</label>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <select id="extraction-config" name="extraction_config" style="flex: 1;">
+                                <option value="">使用默认配置</option>
+                            </select>
+                            <button type="button" class="btn btn-sm" onclick="showConfigModal()">管理配置</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="pdf-file">选择PDF文件</label>
+                        <div class="file-upload-area" id="file-upload-area">
+                            <input type="file" id="pdf-file" name="file" accept=".pdf" required>
+                            <div class="file-upload-placeholder">
+                                <span class="upload-icon">📄</span>
+                                <p>点击选择或拖拽PDF文件到此处</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">开始处理</button>
+                </form>
+            </div>
+
+            <!-- 进度显示 -->
+            <div id="progress-container" class="card hidden">
+                <h3>处理进度</h3>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <p id="progress-message" class="progress-message">准备中...</p>
+            </div>
+        </div>
+
+        <!-- 论文列表页面 -->
+        <div id="papers-page" class="page">
+            <div class="card">
+                <div class="card-header">
+                    <h2>论文列表</h2>
+                    <button class="btn btn-primary" onclick="showPage('upload')">+ 上传新论文</button>
+                </div>
+                <div id="papers-list" class="papers-list">
+                    <p class="loading">加载中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据库查看页面 -->
+        <div id="database-page" class="page">
+            <div class="card">
+                <div class="card-header">
+                    <h2>数据库查看</h2>
+                </div>
+                <div class="database-viewer">
+                    <div class="table-selector">
+                        <label for="table-select">选择表：</label>
+                        <select id="table-select" onchange="loadTableData()">
+                            <option value="">请选择表</option>
+                        </select>
+                        <button class="btn btn-sm" onclick="refreshTables()">刷新</button>
+                    </div>
+                    
+                    <div class="table-controls">
+                        <div class="search-box">
+                            <input type="text" id="table-search" placeholder="搜索..." onkeyup="handleTableSearch(event)">
+                            <button class="btn btn-sm" onclick="loadTableData()">搜索</button>
+                        </div>
+                        <div class="pagination-info" id="pagination-info"></div>
+                    </div>
+                    
+                    <div id="table-data-container" class="table-data-container">
+                        <p class="loading">请选择一个表</p>
+                    </div>
+                    
+                    <div class="pagination-controls" id="pagination-controls"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 论文详情弹窗 -->
+    <div id="paper-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">论文详情</h2>
+                <div class="modal-header-controls">
+                    <button class="modal-btn" onclick="zoomModalOut('paper-modal')" title="缩小">−</button>
+                    <span id="modal-zoom-level" class="modal-zoom-level">100%</span>
+                    <button class="modal-btn" onclick="zoomModalIn('paper-modal')" title="放大">+</button>
+                    <button class="modal-btn" onclick="resetModalZoom('paper-modal')" title="重置">重置</button>
+                    <button class="modal-btn" onclick="toggleModalFullscreen('paper-modal')" title="全屏" id="fullscreen-btn">⛶</button>
+                    <button class="modal-close" onclick="closeModal('paper-modal')">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="showTab('data-tab')">数据编辑</button>
+                    <button class="tab-btn" onclick="showTab('figures-tab')">分子结构图</button>
+                    <button class="tab-btn" onclick="showTab('smiles-tab')">SMILES识别</button>
+                    <button class="tab-btn" onclick="showTab('source-tab')">原文查看</button>
+                </div>
+
+                <!-- 数据编辑标签页 -->
+                <div id="data-tab" class="tab-content active">
+                    <div class="tab-controls">
+                        <button class="btn btn-sm" onclick="switchDataType('photophysical')">光物性数据</button>
+                        <button class="btn btn-sm" onclick="switchDataType('device')">器件数据</button>
+                        <button class="btn btn-sm btn-success" onclick="saveData()">保存</button>
+                        <button class="btn btn-sm" onclick="exportData()">导出JSON</button>
+                    </div>
+                    <div id="data-table-container" class="table-container">
+                        <table id="data-table" class="data-table">
+                            <thead id="data-table-head"></thead>
+                            <tbody id="data-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 分子结构图标签页 -->
+                <div id="figures-tab" class="tab-content">
+                    <div id="figures-container" class="figures-grid">
+                        <p class="loading">加载中...</p>
+                    </div>
+                </div>
+
+                <!-- SMILES识别标签页 -->
+                <div id="smiles-tab" class="tab-content">
+                    <div class="smiles-recognizer">
+                        <div class="paste-area" id="paste-area">
+                            <div class="paste-placeholder">
+                                <span class="paste-icon">📋</span>
+                                <p>粘贴图片 (Ctrl+V / Cmd+V)</p>
+                                <p class="hint">或点击下方按钮上传图片</p>
+                            </div>
+                            <canvas id="paste-canvas" class="hidden"></canvas>
+                            <img id="paste-preview" class="hidden" alt="预览">
+                        </div>
+                        <div class="upload-controls">
+                            <input type="file" id="image-upload" accept="image/*" class="hidden">
+                            <button class="btn btn-primary" onclick="document.getElementById('image-upload').click()">选择图片</button>
+                            <button class="btn btn-success" id="recognize-btn" onclick="recognizeImage()" disabled>识别SMILES</button>
+                        </div>
+                        <div id="recognition-result" class="recognition-result hidden">
+                            <div class="result-box">
+                                <label>SMILES编码</label>
+                                <textarea id="smiles-result" readonly></textarea>
+                                <div class="result-meta">
+                                    <span>置信度: <span id="confidence-value">-</span></span>
+                                </div>
+                            </div>
+                            <div class="fill-controls">
+                                <select id="compound-select"></select>
+                                <button class="btn btn-primary" onclick="fillSmiles()">填充到数据</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 原文查看标签页 -->
+                <div id="source-tab" class="tab-content">
+                    <div class="source-viewer">
+                        <div class="source-layout">
+                            <div class="source-left">
+                                <h3>抽取的数据</h3>
+                                <div class="data-list-container">
+                                    <div class="data-type-tabs">
+                                        <button class="data-type-btn active" onclick="switchSourceDataType('photophysical')">光物性数据</button>
+                                        <button class="data-type-btn" onclick="switchSourceDataType('device')">器件数据</button>
+                                    </div>
+                                    <div id="source-data-table-container" class="source-data-table-container">
+                                        <p class="loading">请选择数据类型</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="source-right">
+                                <div class="pdf-viewer-header">
+                                    <h3>论文原文</h3>
+                                    <div class="pdf-controls">
+                                        <button class="btn btn-sm" onclick="zoomOut()" title="缩小">−</button>
+                                        <span id="zoom-level" class="zoom-level">100%</span>
+                                        <button class="btn btn-sm" onclick="zoomIn()" title="放大">+</button>
+                                        <button class="btn btn-sm" onclick="resetZoom()" title="重置">重置</button>
+                                        <button class="btn btn-sm" onclick="fitWidth()" title="适应宽度">适应宽度</button>
+                                        <button class="btn btn-sm" onclick="fitPage()" title="适应页面">适应页面</button>
+                                    </div>
+                                </div>
+                                <div id="pdf-viewer-container" class="pdf-viewer-container">
+                                    <div id="source-content" class="source-content">
+                                        <p class="loading">请从左侧选择数据项查看原文</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 配置管理弹窗 -->
+    <div id="config-modal" class="modal">
+        <div class="modal-content" style="width: 60%; max-width: 1000px;">
+            <div class="modal-header">
+                <h2>抽取配置管理</h2>
+                <div class="modal-header-controls">
+                    <button class="modal-btn" onclick="zoomModalOut('config-modal')" title="缩小">−</button>
+                    <span class="modal-zoom-level">100%</span>
+                    <button class="modal-btn" onclick="zoomModalIn('config-modal')" title="放大">+</button>
+                    <button class="modal-btn" onclick="resetModalZoom('config-modal')" title="重置">重置</button>
+                    <button class="modal-btn" onclick="toggleModalFullscreen('config-modal')" title="全屏">⛶</button>
+                    <button class="modal-close" onclick="closeModal('config-modal')">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="config-tabs">
+                    <button class="tab-btn active" onclick="showConfigTab('config-list')">配置列表</button>
+                    <button class="tab-btn" onclick="showConfigTab('config-editor')">新建/编辑配置</button>
+                </div>
+                
+                <div id="config-list" class="config-tab-content active">
+                    <div id="configs-list-container">
+                        <p class="loading">加载中...</p>
+                    </div>
+                </div>
+                
+                <div id="config-editor" class="config-tab-content">
+                    <div class="form-group">
+                        <label for="config-name">配置名称</label>
+                        <input type="text" id="config-name" placeholder="输入配置名称" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="config-description">配置描述</label>
+                        <textarea id="config-description" placeholder="输入配置描述" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>数据字段配置</label>
+                        <div class="config-fields-container">
+                            <div class="field-type-section">
+                                <h4>光物性数据字段</h4>
+                                <div class="field-list" id="photophysical-fields">
+                                    <div class="field-item">
+                                        <input type="checkbox" id="pp-paper_local_id" checked>
+                                        <label for="pp-paper_local_id">paper_local_id</label>
+                                    </div>
+                                    <div class="field-item">
+                                        <input type="checkbox" id="pp-smiles" checked>
+                                        <label for="pp-smiles">smiles</label>
+                                    </div>
+                                    <div class="field-item">
+                                        <input type="checkbox" id="pp-lambda_PL_nm" checked>
+                                        <label for="pp-lambda_PL_nm">lambda_PL_nm</label>
+                                    </div>
+                                    <div class="field-item">
+                                        <input type="checkbox" id="pp-FWHM_nm" checked>
+                                        <label for="pp-FWHM_nm">FWHM_nm</label>
+                                    </div>
+                                    <div class="field-item">
+                                        <input type="checkbox" id="pp-Phi_PL">
+                                        <label for="pp-Phi_PL">Phi_PL</label>
+                                    </div>
+                                    <div class="field-item">
+                                        <input type="checkbox" id="pp-Delta_EST_eV">
+                                        <label for="pp-Delta_EST_eV">Delta_EST_eV</label>
+                                    </div>
+                                    <div class="field-item">
+                                        <input type="checkbox" id="pp-environment_type">
+                                        <label for="pp-environment_type">environment_type</label>
+                                    </div>
+                                    <div class="field-item">
+                                        <input type="checkbox" id="pp-host">
+                                        <label for="pp-host">host</label>
+                                    </div>
+                                </div>
+                                <div class="custom-field-input">
+                                    <input type="text" id="pp-custom-field" placeholder="添加自定义字段（回车添加）">
+                                </div>
+                            </div>
+                            <div class="field-type-section">
+                                <h4>器件数据字段</h4>
+                                <div class="field-list" id="device-fields">
+                                    <div class="field-item">
+                                        <input type="checkbox" id="dev-paper_local_id" checked>
+                                        <label for="dev-paper_local_id">paper_local_id</label>
+                                    </div>
+                                    <div class="field-item">
+                                        <input type="checkbox" id="dev-EQE_max_percent" checked>
+                                        <label for="dev-EQE_max_percent">EQE_max_percent</label>
+                                    </div>
+                                    <div class="field-item">
+                                        <input type="checkbox" id="dev-lambda_EL_nm">
+                                        <label for="dev-lambda_EL_nm">lambda_EL_nm</label>
+                                    </div>
+                                    <div class="field-item">
+                                        <input type="checkbox" id="dev-CIE_x">
+                                        <label for="dev-CIE_x">CIE_x</label>
+                                    </div>
+                                    <div class="field-item">
+                                        <input type="checkbox" id="dev-CIE_y">
+                                        <label for="dev-CIE_y">CIE_y</label>
+                                    </div>
+                                    <div class="field-item">
+                                        <input type="checkbox" id="dev-emitter_name">
+                                        <label for="dev-emitter_name">emitter_name</label>
+                                    </div>
+                                    <div class="field-item">
+                                        <input type="checkbox" id="dev-device_structure">
+                                        <label for="dev-device_structure">device_structure</label>
+                                    </div>
+                                    <div class="field-item">
+                                        <input type="checkbox" id="dev-host">
+                                        <label for="dev-host">host</label>
+                                    </div>
+                                </div>
+                                <div class="custom-field-input">
+                                    <input type="text" id="dev-custom-field" placeholder="添加自定义字段（回车添加）">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn" onclick="closeModal('config-modal')">取消</button>
+                        <button class="btn btn-primary" onclick="saveConfig()">保存配置</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认弹窗 -->
+    <div id="confirm-modal" class="modal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3 id="confirm-title">确认</h3>
+            </div>
+            <div class="modal-body">
+                <p id="confirm-message"></p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('confirm-modal')">取消</button>
+                <button class="btn btn-primary" id="confirm-ok">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 消息提示 -->
+    <div id="toast" class="toast hidden">
+        <span id="toast-message"></span>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
+
