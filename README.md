@@ -245,30 +245,11 @@ python main.py --mode export \
 
 编辑 `config.py` 中的范围参数
 
-## 性能建议
-
-- **批量处理**：使用batch模式可以更高效地处理多个文献
-- **API限流**：注意Qwen API的请求频率限制，代码中已添加sleep
-- **断点续传**：处理失败的文献会记录日志，可单独重新处理
-- **数据备份**：定期备份 `data/database/` 目录
-
-## 常见问题
-
-### Q: DECIMER服务如何部署？
-
-A: 请参考DECIMER官方文档进行本地部署，或使用Docker镜像。
-
-### Q: 没有RDKit怎么办？
-
-A: 系统会自动降级，跳过SMILES的详细验证，但建议安装。
-
-### Q: Qwen-VL图像分类失败？
-
-A: 检查API配置和网络连接，确保使用支持多模态的模型版本。
-
-### Q: 如何处理SI（Supporting Information）？
-
-A: 将SI PDF作为单独的论文处理，或修改代码合并main+SI的JSON。
+## 网页
+<!-- 插入image,image1.png,image2.png -->
+![image1](image1.png)
+![image2](image2.png)   
+![image](image.png)
 
 ## 联系方式
 
